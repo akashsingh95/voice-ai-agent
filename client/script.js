@@ -16,7 +16,7 @@ async function sendRequest() {
 
     // Make a POST request to the /process endpoint
     try {
-        const response = await fetch('http://localhost:3000/process', {
+        const response = await fetch('http://localhost:3000/api/process', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
