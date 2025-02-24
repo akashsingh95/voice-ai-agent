@@ -8,13 +8,15 @@ const {
     createAppointment,
     getAllAppointments,
     saveConversationState,
-    getConversationState
+    getConversationState,
+    getAvailableSlots
 } = require('./services/appointmentService');
 const { textToSpeech } = require('./services/audioService');
 const {
     checkBookingIntent,
     extractAppointmentDetails,
-    getGeneralConversationResponse
+    getGeneralConversationResponse,
+    checkAvailableSlotsIntent
 } = require('./services/llmService');
 
 const app = express();
@@ -38,40 +40,52 @@ app.post('/process', async (req, res) => {
         let responseText = '';
         let appointmentDetails = getConversationState(userId) || {};
 
-        // Check if the text has booking intent
-        const isBookingIntent = await checkBookingIntent(text);
-        console.log('Is booking intent:', isBookingIntent);
+        // First, check if the user is asking about available slots
+        const isCheckingSlots = await checkAvailableSlotsIntent(text);
+        console.log('Is checking available slots:', isCheckingSlots); 
 
-        if (isBookingIntent) {
-            // Extract appointment details from the current message
-            const extractedDetails = await extractAppointmentDetails(text);
-            console.log('Extracted appointment details:', extractedDetails);
-
-            // Merge extracted details with conversation state
-            appointmentDetails = { ...appointmentDetails, ...extractedDetails };
-
-            // Check if all required details are present
-            if (!appointmentDetails.appointment_type) {
-                responseText = 'What type of appointment is this? (e.g., doctor, meeting)';
-            } else if (!appointmentDetails.date) {
-                responseText = 'When would you like to schedule this appointment?';
-            } else if (!appointmentDetails.time) {
-                responseText = 'What time would you like the appointment?';
-            } else if (!appointmentDetails.type) {
-                responseText = 'Should this be an online or offline appointment?';
-            } else {
-                // All required details are present, create the appointment
-                const bookingResponse = createAppointment(appointmentDetails);
-                responseText = bookingResponse.message;
-                // Clear conversation state after booking
-                saveConversationState(userId, {});
-            }
-
-            // Save the conversation state for the next interaction
-            saveConversationState(userId, appointmentDetails);
+    
+        if (isCheckingSlots && text.toLowerCase().includes("available slots")) {
+            const availableSlots = getAvailableSlots();
+            responseText = availableSlots.length
+                ? `Available slots: ${availableSlots.join(', ')}`
+                : "Sorry, no slots are available at the moment.";
         } else {
-            // Handle as a general conversation
-            responseText = await getGeneralConversationResponse(text);
+            // Check if the text has booking intent
+            const isBookingIntent = await checkBookingIntent(text);
+            console.log('Is booking intent:', isBookingIntent);
+
+            if (isBookingIntent) {
+                // Extract appointment details from the current message
+                const extractedDetails = await extractAppointmentDetails(text);
+                console.log('Extracted appointment details:', extractedDetails);
+
+                // Merge extracted details with conversation state
+                appointmentDetails = { ...appointmentDetails, ...extractedDetails };
+
+                // Check if all required details are present
+                if (!appointmentDetails.appointment_type) {
+                    responseText = 'What type of appointment is this? (e.g., doctor, meeting)';
+                } else if (!appointmentDetails.date) {
+                    responseText = 'When would you like to schedule this appointment?';
+                } else if (!appointmentDetails.time) {
+                    responseText = 'What time would you like the appointment?';
+                } else if (!appointmentDetails.type) {
+                    responseText = 'Should this be an online or offline appointment?';
+                } else {
+                    // All required details are present, create the appointment
+                    const bookingResponse = createAppointment(appointmentDetails);
+                    responseText = bookingResponse.message;
+                    // Clear conversation state after booking
+                    saveConversationState(userId, {});
+                }
+
+                // Save the conversation state for the next interaction
+                saveConversationState(userId, appointmentDetails);
+            } else {
+                // Handle as a general conversation
+                responseText = await getGeneralConversationResponse(text);
+            }
         }
 
         // Convert text response to speech (MP3)

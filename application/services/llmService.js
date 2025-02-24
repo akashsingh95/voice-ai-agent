@@ -73,8 +73,31 @@ async function getGeneralConversationResponse(text) {
     }
 }
 
+// Check if the user wants to check available slots
+async function checkAvailableSlotsIntent(text) {
+    try {
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are an AI assistant that determines if a user's message is about checking available appointment slots. Respond with 'yes' or 'no'."
+                },
+                { role: "user", content: text }
+            ],
+            max_tokens: 10,
+        });
+
+        return completion.choices[0].message.content.trim().toLowerCase() === 'yes';
+    } catch (error) {
+        console.error("Error checking available slots intent:", error);
+        return false;
+    }
+}
+
 module.exports = {
     checkBookingIntent,
     extractAppointmentDetails,
     getGeneralConversationResponse,
+    checkAvailableSlotsIntent
 };

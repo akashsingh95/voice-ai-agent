@@ -1,4 +1,6 @@
 const crypto = require('crypto');
+const slots = ["10:00 AM", "11:00 AM", "2:00 PM", "3:00 PM"];
+
 
 // In-memory cache to store appointments
 const appointmentCache = new Map();
@@ -62,10 +64,16 @@ function getConversationState(userId) {
     return conversationState.get(userId);
 }
 
+function getAvailableSlots() {
+    const bookedSlots = Array.from(appointmentCache.values()).map(app => app.time);
+    return slots.filter(slot => !bookedSlots.includes(slot));
+}
+
 module.exports = {
     createAppointment,
     getAllAppointments,
     isSlotBooked,
     saveConversationState,
-    getConversationState
+    getConversationState,
+    getAvailableSlots
 };
