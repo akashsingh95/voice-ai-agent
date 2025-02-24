@@ -39,8 +39,19 @@ Open index.html in browser
 
 
 
-
-
+### SEQUENCE FLOW
+```sh
+User → Frontend: Enters "Book a doctor appointment for tomorrow at 10 AM online"
+Frontend → Backend API (/process): Sends request with user input
+Backend API → LLM Service: Check intent (appointment booking or general query)
+LLM Service → Backend API: Returns extracted appointment details
+Backend API → Appointment Service: Validate & save appointment
+Appointment Service → Backend API: Confirmation message
+Backend API → Text-to-Speech Service: Convert response to MP3
+Text-to-Speech Service → Backend API: Return MP3 file URL
+Backend API → Frontend: Send text response + audio URL
+Frontend → User: Display response in chat & auto-play MP3
+```
 
 
 
