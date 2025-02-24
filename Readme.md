@@ -81,6 +81,11 @@ Frontend → User: Display response in chat & auto-play MP3
 ```
 
 
+### Chat UI
+![Chat Interface](docs/screenshots/chat.png)
+
+### Appointment Confirmation
+![Appointment Booking](docs/screenshots/confirmation.png)
 
 
 
