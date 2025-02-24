@@ -5,94 +5,89 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Check if the message indicates an intent to book an appointment
-async function checkBookingIntent(text) {
+/**
+ * Generic function to communicate with OpenAI API.
+ * @param {string} systemPrompt - The system's role and instructions.
+ * @param {string} userMessage - The user's input text.
+ * @param {number} maxTokens - Maximum tokens for response.
+ * @returns {Promise<string>} - The AI-generated response.
+ */
+async function askLLM(systemPrompt, userMessage, maxTokens = 100) {
     try {
         const completion = await openai.chat.completions.create({
             model: "gpt-4",
             messages: [
-                {
-                    role: "system",
-                    content: "You are an AI assistant that determines if a user's message is about booking an appointment. Respond with a simple 'yes' or 'no'."
-                },
-                { role: "user", content: text }
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMessage }
             ],
-            max_tokens: 10,
+            max_tokens: maxTokens,
         });
 
-        const intent = completion.choices[0].message.content.trim().toLowerCase();
-        return intent === 'yes';
+        return completion.choices[0].message.content.trim();
     } catch (error) {
-        console.error("Error checking booking intent:", error);
-        return false;
+        console.error(`Error in LLM request: ${systemPrompt}`, error);
+        throw new Error("Failed to process request with OpenAI.");
     }
 }
 
-// Extract appointment details
-async function extractAppointmentDetails(text) {
-    try {
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4",
-            messages: [
-                {
-                    role: "system",
-                    content: "You are an AI assistant that extracts appointment details from user messages. Return the data as a JSON object with keys: appointment_type, date, time, and type (online/offline). If you can't find any of these, set them to null."
-                },
-                { role: "user", content: text }
-            ],
-            max_tokens: 100,
-        });
+/**
+ * Determines if the user's message is about booking an appointment.
+ * @param {string} text - User input.
+ * @returns {Promise<boolean>} - True if intent is booking, otherwise false.
+ */
+async function checkBookingIntent(text) {
+    const response = await askLLM(
+        "You are an AI assistant that determines if a user's message is about booking an appointment. Respond with a simple 'yes' or 'no'.",
+        text,
+        10
+    );
+    return response.toLowerCase() === 'yes';
+}
 
-        const resultText = completion.choices[0].message.content;
-        return JSON.parse(resultText);
+/**
+ * Extracts appointment details (type, date, time, mode) from user input.
+ * @param {string} text - User input.
+ * @returns {Promise<object>} - Extracted appointment details.
+ */
+async function extractAppointmentDetails(text) {
+    const response = await askLLM(
+        "You are an AI assistant that extracts appointment details from user messages. Return the data as a JSON object with keys: appointment_type, date, time, and type (online/offline). If any of these are missing, set them to null.",
+        text
+    );
+
+    try {
+        return JSON.parse(response);
     } catch (error) {
-        console.error("Error extracting appointment details:", error);
+        console.error("Error parsing appointment details:", response);
         throw new Error("Failed to extract appointment details.");
     }
 }
 
-// Get a general conversation response if it's not a booking intent
+/**
+ * Generates a general AI response if the message is not related to booking.
+ * @param {string} text - User input.
+ * @returns {Promise<string>} - AI-generated general response.
+ */
 async function getGeneralConversationResponse(text) {
-    try {
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4",
-            messages: [
-                {
-                    role: "system",
-                    content: "You are a helpful AI assistant that provides friendly and informative answers to user questions."
-                },
-                { role: "user", content: text }
-            ],
-            max_tokens: 150,
-        });
-
-        return completion.choices[0].message.content;
-    } catch (error) {
-        console.error("Error generating conversation response:", error);
-        throw new Error("Failed to generate a conversation response.");
-    }
+    return askLLM(
+        "You are a helpful AI assistant that provides friendly and informative answers to user questions.",
+        text,
+        150
+    );
 }
 
-// Check if the user wants to check available slots
+/**
+ * Determines if the user's message is about checking available appointment slots.
+ * @param {string} text - User input.
+ * @returns {Promise<boolean>} - True if intent is to check slots, otherwise false.
+ */
 async function checkAvailableSlotsIntent(text) {
-    try {
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4",
-            messages: [
-                {
-                    role: "system",
-                    content: "You are an AI assistant that determines if a user's message is about checking available appointment slots. Respond with 'yes' or 'no'."
-                },
-                { role: "user", content: text }
-            ],
-            max_tokens: 10,
-        });
-
-        return completion.choices[0].message.content.trim().toLowerCase() === 'yes';
-    } catch (error) {
-        console.error("Error checking available slots intent:", error);
-        return false;
-    }
+    const response = await askLLM(
+        "You are an AI assistant that determines if a user's message is about checking available appointment slots. Respond with 'yes' or 'no'.",
+        text,
+        10
+    );
+    return response.toLowerCase() === 'yes';
 }
 
 module.exports = {
