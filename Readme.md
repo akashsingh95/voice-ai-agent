@@ -53,6 +53,33 @@ Backend API → Frontend: Send text response + audio URL
 Frontend → User: Display response in chat & auto-play MP3
 ```
 
+### PROJECT STRUCTURE
+```sh
+/voice-ai-agent/            # Root project directory
+│
+├── application/            # Backend logic (Node.js, Express, AI processing)
+│   ├── routes/             # Express API routes
+│   │   ├── bookingRoutes.js  # Routes for appointment booking & queries
+│   │
+│   ├── services/           # Business Logic Layer
+│   │   ├── bookingService.js   # Handles appointment scheduling logic
+│   │   ├── appointmentService.js  # Stores & retrieves appointment data
+│   │   ├── audioService.js  # Converts text responses to MP3 audio
+│   │   ├── llmService.js    # AI logic (intent detection, NLP processing)
+│   │
+│   ├── uploads/            # Stores generated MP3 audio responses
+│   ├── index.js            # Main Express Server File
+│   
+│
+├── client/                 # Frontend (Chat UI)
+│   ├── script.js           # chat logic
+│   ├── index.html          # UI entry
+│
+├── package.json            # Root package.json
+├── README.md               # Main project documentation
+
+```
+
 
 
 
